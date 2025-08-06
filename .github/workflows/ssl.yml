@@ -29,16 +29,22 @@ jobs:
           wget https://github.com/openssl/openssl/archive/refs/tags/openssl-3.5.2.tar.gz
           tar -xvzf openssl-3.5.2.tar.gz
 
-      - name: Setup Android NDK
-        uses: android-actions/setup-ndk@v4
-        with:
-          ndk-version: '21.4.7075529'  # 使用适配的 NDK 版本
+      - name: Download and set up Android NDK
+        run: |
+          # 下载并解压 Android NDK (r21e版本)
+          wget https://dl.google.com/android/repository/android-ndk-r21e-linux-x86_64.zip
+          unzip android-ndk-r21e-linux-x86_64.zip -d $HOME
+          export ANDROID_NDK_HOME=$HOME/android-ndk-r21e
+          echo "ANDROID_NDK_HOME=$HOME/android-ndk-r21e" >> $GITHUB_ENV
 
       - name: Set up environment for cross-compilation
         run: |
-          export ANDROID_NDK=/opt/hostedtoolcache/android-ndk/21.4.7075529
+          export ANDROID_NDK=$HOME/android-ndk-r21e
           export PATH=$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
           export OPENSSL_DIR=$(pwd)/openssl-3.5.2
+          echo "ANDROID_NDK=$ANDROID_NDK" >> $GITHUB_ENV
+          echo "PATH=$PATH" >> $GITHUB_ENV
+          echo "OPENSSL_DIR=$OPENSSL_DIR" >> $GITHUB_ENV
 
       - name: Compile OpenSSL for Android
         run: |
