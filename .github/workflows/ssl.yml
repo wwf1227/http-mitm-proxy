@@ -28,6 +28,7 @@ jobs:
         run: |
           wget https://github.com/openssl/openssl/archive/refs/tags/openssl-3.5.2.tar.gz
           tar -xvzf openssl-3.5.2.tar.gz
+          ls -l
 
       - name: Download and set up Android NDK
         run: |
