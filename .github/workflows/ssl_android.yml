@@ -1,0 +1,65 @@
+name: Build OpenSSL for Android
+
+on:
+  workflow_dispatch:  # 手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository (forked repo)
+      - name: Checkout the repository
+        uses: actions/checkout@v2
+
+      # Step 2: Download OpenSSL source
+      - name: Download OpenSSL source
+        run: |
+          git clone --branch openssl-3.5.2 https://github.com/openssl/openssl.git
+          cd openssl
+          git checkout openssl-3.5.2  # Ensure you're on the correct tag
+
+      # Step 3: Set up Android NDK
+      - name: Setup Android NDK
+        uses: android-actions/setup-ndk@v1
+        with:
+          ndk-version: '21.4.7075529'
+
+      # Step 4: Set up environment variables for cross-compilation
+      - name: Set up environment variables
+        run: |
+          export ANDROID_NDK_ROOT=$HOME/Android/Sdk/ndk/21.4.7075529
+          export PATH=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
+          export CROSS_COMPILE=arm-linux-androideabi-  # For armeabi-v7a, change as necessary
+
+      # Step 5: Build OpenSSL for Android
+      - name: Build OpenSSL for Android
+        run: |
+          cd openssl
+          ./Configure android-arm64 -D__ANDROID_API__=21 --prefix=$GITHUB_WORKSPACE/openssl-arm64
+          make
+          make install
+
+          # Build for other architectures
+          ./Configure android-arm -D__ANDROID_API__=21 --prefix=$GITHUB_WORKSPACE/openssl-arm
+          make
+          make install
+
+          ./Configure android-x86_64 -D__ANDROID_API__=21 --prefix=$GITHUB_WORKSPACE/openssl-x86_64
+          make
+          make install
+
+          ./Configure android-x86 -D__ANDROID_API__=21 --prefix=$GITHUB_WORKSPACE/openssl-x86
+          make
+          make install
+
+      # Step 6: Upload the built OpenSSL libraries as artifacts (optional)
+      - name: Upload OpenSSL artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: openssl-libraries
+          path: |
+            $GITHUB_WORKSPACE/openssl-arm64
+            $GITHUB_WORKSPACE/openssl-arm
+            $GITHUB_WORKSPACE/openssl-x86_64
+            $GITHUB_WORKSPACE/openssl-x86
