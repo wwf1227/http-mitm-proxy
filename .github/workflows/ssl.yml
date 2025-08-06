@@ -1,71 +1,45 @@
 name: Build OpenSSL for Android
 
 on:
-  workflow_dispatch:  # 手动触发工作流
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout the repository
         uses: actions/checkout@v2
+
+      - name: Set up Android NDK
+        uses: reactivecircus/setup-android@v2
+        with:
+          ndk-version: "21.3.6528147"
+          sdk-version: "30.0.3"
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            perl \
-            wget \
-            git \
-            unzip \
-            make \
-            clang \
-            pkg-config
+          sudo apt-get install -y wget unzip
 
-      - name: Download OpenSSL source code
+      - name: Download OpenSSL source
         run: |
           wget https://github.com/openssl/openssl/archive/refs/tags/openssl-3.5.2.tar.gz
-          tar -xvzf openssl-3.5.2.tar.gz
+          tar -xzvf openssl-3.5.2.tar.gz
+          cd openssl-3.5.2
 
-      - name: Setup Android NDK
-        uses: android-actions/setup-ndk@v2
-        with:
-          ndk-version: '21.4.7075529'  # 使用适配的 NDK 版本
-
-      - name: Set up environment for cross-compilation
-        run: |
-          export ANDROID_NDK=/opt/hostedtoolcache/android-ndk/21.4.7075529
-          export PATH=$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
-          export OPENSSL_DIR=$(pwd)/openssl-3.5.2
-
-      - name: Compile OpenSSL for Android
+      - name: Build OpenSSL for Android
         run: |
           cd openssl-3.5.2
-          # 编译不同架构
-          ./Configure android-arm64 -D__ANDROID_API__=29 --prefix=$PWD/openssl_arm64
-          make -j$(nproc)
-          make install
-          
-          ./Configure android-arm -D__ANDROID_API__=29 --prefix=$PWD/openssl_arm
-          make -j$(nproc)
-          make install
-          
-          ./Configure android-x86_64 -D__ANDROID_API__=29 --prefix=$PWD/openssl_x86_64
-          make -j$(nproc)
+          ./Configure android-arm64 -D__ANDROID_API__=29
+          make
           make install
 
-          ./Configure android-x86 -D__ANDROID_API__=29 --prefix=$PWD/openssl_x86
-          make -j$(nproc)
-          make install
-
-      - name: Upload compiled OpenSSL files
-        uses: actions/upload-artifact@v2
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
         with:
           name: openssl-android
-          path: |
-            openssl-3.5.2/openssl_arm64
-            openssl-3.5.2/openssl_arm
-            openssl-3.5.2/openssl_x86_64
-            openssl-3.5.2/openssl_x86
+          path: path/to/your/openssl/output
